@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Room</title>
+    <script>
+      let currentPlayerId;
+      let currentTurnPlayerId = 1;
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomId = urlParams.get('roomId');
+
+      const ws = new WebSocket('ws://localhost:8080');
+
+      ws.onopen = function () {
+        if (roomId) {
+          ws.send(JSON.stringify({ type: 'join', roomId: roomId }));
+        }
+      };
+
+      ws.onmessage = function (event) {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'joined') {
+          currentPlayerId = data.playerId;
+          updateTurnButton();
+        } else if (data.type === 'chat') {
+          const chatBox = document.getElementById('chat-box');
+          const message = document.createElement('p');
+          message.textContent = data.message;
+          chatBox.appendChild(message);
+        } else if (data.type === 'turnUpdate') {
+          currentTurnPlayerId = data.currentTurnPlayerId;
+          updateTurnButton();
+        }
+      };
+
+      function updateTurnButton() {
+        const turnButton = document.getElementById('turn-button');
+        turnButton.disabled = currentPlayerId !== currentTurnPlayerId;
+      }
+
+      function sendMessage() {
+        const messageInput = document.getElementById('message-input');
+        const message = messageInput.value;
+        if (message && roomId) {
+          ws.send(
+            JSON.stringify({ type: 'chat', roomId: roomId, message: message }),
+          );
+          messageInput.value = '';
+        }
+      }
+
+      function passTurn() {
+        if (currentPlayerId && currentPlayerId === currentTurnPlayerId) {
+          ws.send(
+            JSON.stringify({
+              type: 'turn',
+              roomId: roomId,
+              playerId: currentPlayerId,
+            }),
+          );
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <h1>방: <span id="room-id"></span></h1>
+    <div
+      id="chat-box"
+      style="border: 1px solid #000; height: 300px; overflow-y: scroll"
+    ></div>
+    <input type="text" id="message-input" placeholder="메시지를 입력하세요" />
+    <button onclick="sendMessage()">전송</button>
+    <button id="turn-button" onclick="passTurn()" disabled>차례 넘기기</button>
+  </body>
+</html>

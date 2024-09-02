@@ -1,0 +1,50 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Room List</title>
+    <script>
+      // WebSocket 연결 코드 (방 목록 상태 업데이트)
+      const ws = new WebSocket('ws://localhost:8080');
+      ws.onmessage = function (event) {
+        const data = JSON.parse(event.data);
+        if (data.type === 'roomState') {
+          // Room 1 상태 업데이트
+          const room1Link = document.getElementById('room1-link');
+          const room1Status = document.getElementById('room1-status');
+          room1Status.innerText = `${data.room1.players}/4`;
+          if (data.room1.players >= 4) {
+            room1Link.style.pointerEvents = 'none';
+            room1Link.style.color = 'gray';
+            room1Status.innerText += ' (입장 불가)';
+          }
+
+          // Room 2 상태 업데이트
+          const room2Link = document.getElementById('room2-link');
+          const room2Status = document.getElementById('room2-status');
+          room2Status.innerText = `${data.room2.players}/4`;
+          if (data.room2.players >= 4) {
+            room2Link.style.pointerEvents = 'none';
+            room2Link.style.color = 'gray';
+            room2Status.innerText += ' (입장 불가)';
+          }
+        }
+      };
+    </script>
+  </head>
+  <body>
+    <h1>방 목록</h1>
+    <ul>
+      <li>
+        <a id="room1-link" href="room.html?roomId=room1">Room 1</a>
+        <span id="room1-status">Loading...</span>
+      </li>
+      <li>
+        <a id="room2-link" href="room.html?roomId=room2">Room 2</a>
+        <span id="room2-status">Loading...</span>
+      </li>
+    </ul>
+  </body>
+</html>
